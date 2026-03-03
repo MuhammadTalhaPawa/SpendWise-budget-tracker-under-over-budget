@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0c0f14;
+      --surface:   #13181f;
+      --border:    #1e2530;
+      --gold:      #e8a830;
+      --gold-dim:  #c48e22;
+      --green:     #32d983;
+      --red:       #f05050;
+      --text:      #dde4ee;
+      --muted:     #6b7a8f;
+      --radius:    14px;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    /* subtle grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(232,168,48,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232,168,48,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: fadeUp .5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Header ── */
+    .header { padding: 0 4px 4px; }
+    .header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      color: var(--gold);
+      letter-spacing: .5px;
+      line-height: 1.1;
+    }
+    .header p {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 5px;
+      letter-spacing: .4px;
+    }
+    .divider {
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), transparent);
+      border-radius: 2px;
+      margin-top: 10px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: border-color .2s;
+    }
+    .card:focus-within { border-color: var(--gold-dim); }
+
+    .card label {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ── Inputs ── */
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 0 14px;
+      gap: 6px;
+      transition: border-color .2s;
+    }
+    .input-wrap:focus-within { border-color: var(--gold); }
+    .input-wrap .sym {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px;
+      color: var(--gold-dim);
+      user-select: none;
+    }
+    .input-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--gold);
+      padding: 12px 0;
+      min-width: 0;
+    }
+    .input-wrap input::placeholder { color: var(--border); }
+
+    /* ── Spinbox (day) ── */
+    .spin-wrap {
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      overflow: hidden;
+      width: fit-content;
+      transition: border-color .2s;
+    }
+    .spin-wrap:focus-within { border-color: var(--gold); }
+    .spin-wrap input[type=number] {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--gold);
+      width: 68px;
+      text-align: center;
+      padding: 12px 0;
+      -moz-appearance: textfield;
+    }
+    .spin-wrap input[type=number]::-webkit-inner-spin-button,
+    .spin-wrap input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .spin-btn {
+      background: var(--border);
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      width: 38px;
+      height: 46px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .spin-btn:hover { background: var(--gold-dim); color: #fff; }
+    .spin-btn:active { background: var(--gold); }
+
+    /* ── Result card ── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px 22px;
+      text-align: center;
+      transition: border-color .4s;
+    }
+    .result-card.under { border-color: rgba(50,217,131,.35); }
+    .result-card.over  { border-color: rgba(240,80,80,.35); }
+
+    .result-status {
+      font-family: 'DM Serif Display', serif;
+      font-size: 13px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      transition: color .3s;
+    }
+    .result-amount {
+      font-family: 'DM Serif Display', serif;
+      font-size: 52px;
+      line-height: 1;
+      transition: color .3s;
+    }
+    .result-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+      letter-spacing: .5px;
+      transition: color .3s;
+    }
+    .result-label.colored { color: inherit; }
+
+    .divider-thin {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat .s-label {
+      font-size: 8.5px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .stat .s-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      margin-top: 14px;
+    }
+    .progress-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0%;
+      transition: width .6s cubic-bezier(.4,0,.2,1), background .3s;
+    }
+    .progress-label {
+      font-size: 9.5px;
+      color: var(--muted);
+      margin-top: 6px;
+      letter-spacing: .4px;
+    }
+
+    .green { color: var(--green); }
+    .red   { color: var(--red); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Budget Tracker</h1>
+    <p>See exactly where you stand this month</p>
+    <div class="divider"></div>
+  </div>
+
+  <!-- Total Budget -->
+  <div class="card">
+    <label>Total Monthly Budget ($)</label>
+    <div class="input-wrap">
+      <span class="sym">$</span>
+      <input type="number" id="budget" value="3000" min="0" placeholder="0" />
+    </div>
+  </div>
+
+  <!-- Amount Spent -->
+  <div class="card">
+    <label>Amount Spent So Far ($)</label>
+    <div class="input-wrap">
+      <span class="sym">$</span>
+      <input type="number" id="spent" value="800" min="0" placeholder="0" />
+    </div>
+  </div>
+
+  <!-- Current Day -->
+  <div class="card">
+    <label>Current Day of Month (1 – 31)</label>
+    <div class="spin-wrap">
+      <button class="spin-btn" id="dec" aria-label="Decrease">&#8722;</button>
+      <input type="number" id="day" value="10" min="1" max="31" />
+      <button class="spin-btn" id="inc" aria-label="Increase">&#43;</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-status" id="resultStatus">UNDER BUDGET</div>
+    <div class="result-amount" id="resultAmount">$0</div>
+    <div class="result-label" id="resultLabel">you still have room to spend</div>
+
+    <div class="divider-thin"></div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="s-label">Allowed by Today</div>
+        <div class="s-value" id="statAllowed">—</div>
+      </div>
+      <div class="stat">
+        <div class="s-label">Spent So Far</div>
+        <div class="s-value" id="statSpent">—</div>
+      </div>
+      <div class="stat">
+        <div class="s-label">Daily Budget</div>
+        <div class="s-value" id="statDaily">—</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">0% of monthly budget used</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const budgetEl = document.getElementById('budget');
+  const spentEl  = document.getElementById('spent');
+  const dayEl    = document.getElementById('day');
+
+  function fmt(n) {
+    return '$' + Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  function recalc() {
+    const total = parseFloat(budgetEl.value) || 0;
+    const spent = parseFloat(spentEl.value)  || 0;
+    let   day   = parseInt(dayEl.value)      || 1;
+    day = Math.max(1, Math.min(31, day));
+    dayEl.value = day;
+
+    const dailyBudget = total / 31;
+    const allowed     = dailyBudget * day;
+    const diff        = allowed - spent;
+    const pct         = total > 0 ? Math.min((spent / total) * 100, 200) : 0;
+
+    document.getElementById('statAllowed').textContent = fmt(allowed);
+    document.getElementById('statSpent').textContent   = fmt(spent);
+    document.getElementById('statDaily').textContent   = fmt(dailyBudget) + '/day';
+
+    const fill  = document.getElementById('progressFill');
+    const card  = document.getElementById('resultCard');
+    const status = document.getElementById('resultStatus');
+    const amount = document.getElementById('resultAmount');
+    const label  = document.getElementById('resultLabel');
+    const pLabel = document.getElementById('progressLabel');
+
+    fill.style.width = Math.min(pct, 100) + '%';
+
+    if (diff >= 0) {
+      const c = 'var(--green)';
+      card.className   = 'result-card under';
+      status.className = 'result-status green';
+      amount.className = 'result-amount green';
+      label.className  = 'result-label';
+      status.textContent = 'UNDER BUDGET';
+      amount.textContent = fmt(diff);
+      label.textContent  = 'you still have room to spend';
+      fill.style.background = 'var(--green)';
+      pLabel.style.color    = 'var(--green)';
+    } else {
+      card.className   = 'result-card over';
+      status.className = 'result-status red';
+      amount.className = 'result-amount red';
+      label.className  = 'result-label';
+      status.textContent = 'OVER BUDGET';
+      amount.textContent = fmt(diff);
+      label.textContent  = 'you have exceeded by this amount';
+      fill.style.background = 'var(--red)';
+      pLabel.style.color    = 'var(--red)';
+    }
+
+    pLabel.textContent = pct.toFixed(1) + '% of monthly budget used (day ' + day + ' of 31)';
+  }
+
+  budgetEl.addEventListener('input', recalc);
+  spentEl.addEventListener('input', recalc);
+  dayEl.addEventListener('input', recalc);
+
+  document.getElementById('inc').addEventListener('click', () => {
+    const v = parseInt(dayEl.value) || 1;
+    if (v < 31) { dayEl.value = v + 1; recalc(); }
+  });
+  document.getElementById('dec').addEventListener('click', () => {
+    const v = parseInt(dayEl.value) || 1;
+    if (v > 1)  { dayEl.value = v - 1; recalc(); }
+  });
+
+  recalc();
+</script>
+</body>
+</html>
