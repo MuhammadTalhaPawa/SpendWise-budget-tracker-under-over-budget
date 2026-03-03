@@ -9,7 +9,7 @@ Built with plain **HTML + CSS + JavaScript**. No frameworks, no installs, no bui
 ## 🌐 Live Demo
 
 > Hosted on GitHub Pages:  
-> [View the Live Site](https://muhammadtalhapawa.github.io/SpendWise-budget-tracker-under-over-budget/)
+> [Click to View the Site](https://muhammadtalhapawa.github.io/SpendWise-budget-tracker-under-over-budget/)
 
 ---
 
